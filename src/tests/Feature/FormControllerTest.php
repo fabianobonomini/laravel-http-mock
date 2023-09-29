@@ -8,6 +8,7 @@ use Illuminate\Http\Client\Request;
 use Illuminate\Support\Facades\Http;
 use Tests\TestCase;
 use GuzzleHttp\Handler\MockHandler;
+use GuzzleHttp\Middleware;
 use GuzzleHttp\HandlerStack;
 use GuzzleHttp\Psr7\Response;
 use GuzzleHttp\Client;
@@ -15,27 +16,56 @@ use GuzzleHttp\Client;
 
 class FormControllerTest extends TestCase
 {
+    protected $container = [];
+    
     public function test_submit_form_200_OK()
     {
+        $postData = json_encode(['key' => 'value']);
         // Create a mock and queue a response.
         $mock = new MockHandler([
-            new Response(200, [], json_encode(['foo' => 'response'])),
+            new Response(200, [], json_encode([
+                'status' => 'OK',
+                'error' =>false,
+                'message' =>'Redirect ready',
+                'urlcompleted' => 'http://urlcompleted.tld',
+                'urlfailed' =>'http://urlfailed.tld',
+                'data' => 'https://www.gesturl.pay.tld/redirect/with?querystring'
+            ])),
         ]);
 
+        // Middleware to store the requests
+        $history = Middleware::history($this->container);
+
         $handlerStack = HandlerStack::create($mock);
+        $handlerStack->push($history);
+
         $client = new Client(['handler' => $handlerStack]);
 
         // Bind the mocked client instance to the service container
         $this->app->instance(Client::class, $client);
 
         // Send a POST request to the form submission URL.
-        $response = $this->post('/submit-form', ['url' => 'http://example.com']);
+        $response = $this->post('/submit-form', ['url' => 'http://example.com/api/1.0/pre-order']);
+
+        // Assert the response
+        $response->assertStatus(302);
 
         // Assert the session has 'success' key and 'Form submitted successfully!' as its value
         $response->assertSessionHas('success', 'Form submitted successfully!');
 
-        // Assert the session has 'response' key and 'OK' as its value
-        // $response->assertSessionHas('response', 'OK');
+        // Assert that a request was made
+        $this->assertCount(1, $this->container);
+
+        // Get the request
+        $request = $this->container[0]['request'];
+
+        // Assert request data
+        $this->assertEquals('POST', $request->getMethod());
+        $this->assertEquals('/api/1.0/pre-order', $request->getUri()->getPath());
+
+        // Assert the sent data
+        $sentData = json_decode($request->getBody(), true);
+        $this->assertEquals($postData, $sentData);
     }
 
 
