@@ -10,7 +10,18 @@
         <div>{{ session('success') }}</div>
     @endif
 
-    <form action="/form" method="post">
+    @if ($errors->any())
+    <div class="alert alert-danger">
+            <!-- Loop through and display the error messages -->
+            <ul>
+                @foreach ($errors->all() as $error)
+                    <li>{{ $error }}</li>
+                @endforeach
+            </ul>
+        </div>
+    @endif
+
+    <form action="/submit-form" method="post">
         @csrf
         <label>
             Url:

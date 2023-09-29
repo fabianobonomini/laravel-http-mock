@@ -19,4 +19,4 @@ Route::get('/', function () {
 });
 
 Route::get('/form', [FormController::class, 'showForm']);
-Route::post('/form', [FormController::class, 'submitForm']);
+Route::post('/submit-form', [FormController::class, 'submitForm']);

@@ -5,8 +5,9 @@ this is a simple example of a laravel http mock inside a test
 
 # Lunch test
 
-`docker-compose exec app php artisan test`
-
+```console
+docker-compose exec app php artisan test --testdox
+```
 # Create a test 
 
 ## Unit test
